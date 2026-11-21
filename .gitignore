@@ -1,0 +1,30 @@
+# Environment variables and secrets
+.env
+.env.*
+**/.env
+**/.env.*
+
+# Google credentials
+secrets/
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Next.js generated files
+.next/
+**/.next/
+out/
+**/out/
+
+# Build files
+build/
+dist/
+coverage/
+
+# Deployment
+.vercel/
+**/.vercel/
+
+# Logs
+*.log
