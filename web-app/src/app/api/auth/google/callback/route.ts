@@ -33,11 +33,29 @@ function parseState(raw: string): MeetingState | null {
   };
 }
 
+function getAppOrigin(req: NextRequest): string {
+  if (process.env.GOOGLE_REDIRECT_URI) {
+    try {
+      return new URL(process.env.GOOGLE_REDIRECT_URI).origin;
+    } catch {
+      // fallback below
+    }
+  }
+  const forwardedHost = req.headers.get("x-forwarded-host");
+  const forwardedProto = req.headers.get("x-forwarded-proto") || "https";
+  if (forwardedHost) {
+    return `${forwardedProto}://${forwardedHost}`;
+  }
+  return req.url;
+}
+
 export async function GET(req: NextRequest) {
+  const appOrigin = getAppOrigin(req);
+
   const fail = (message: string) => {
     console.error(`[oauth-callback] ${message}`);
     return NextResponse.redirect(
-      new URL(`/meeting-created?error=${encodeURIComponent(message)}`, req.url)
+      new URL(`/meeting-created?error=${encodeURIComponent(message)}`, appOrigin)
     );
   };
 
@@ -99,7 +117,7 @@ export async function GET(req: NextRequest) {
   const rawState = req.nextUrl.searchParams.get("state");
   if (!rawState) {
     // Plain connect (no meeting data) — send the user back ready to generate
-    return NextResponse.redirect(new URL("/?auth=connected", req.url));
+    return NextResponse.redirect(new URL("/?auth=connected", appOrigin));
   }
 
   const meeting = parseState(rawState);
@@ -153,7 +171,7 @@ export async function GET(req: NextRequest) {
   }
 
   // 3. Redirect to the result page with everything needed for sharing
-  const redirectUrl = new URL("/meeting-created", req.url);
+  const redirectUrl = new URL("/meeting-created", appOrigin);
   redirectUrl.searchParams.set("meetLink", meetLink);
   redirectUrl.searchParams.set("title", meeting.title);
   redirectUrl.searchParams.set("start", meeting.start);
